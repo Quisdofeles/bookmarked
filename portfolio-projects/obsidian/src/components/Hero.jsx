@@ -1,22 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./Hero.module.css";
 
-// Virtual timeline length (seconds) driving the text breakpoints below and the
-// scroll-to-frame mapping. Not tied to any real media duration anymore — it's
-// just the same 0-8 scale the old video used, kept so downstream logic
-// (breakpoints, sidebar carousel, progress bar) didn't need to change.
 const TIMELINE_DURATION = 10;
 
-const FRAME_COUNT = 40; // Obsidian_Hero_Disassemble_Frame-1.webp .. Frame-40.webp in /public/images
+const FRAME_COUNT = 40; 
 
 function frameSrc(index) {
   return `/images/Obsidian_Hero_Disassemble_Frame-${index}.webp`;
 }
 
-// Titles carry an embedded "\n" marking where the hero <h1> breaks into its two
-// display lines (see .titleLine in Hero.module.css). It's a single field, not
-// separate line1/line2 fields — the sidebar card heading below reuses the same
-// string and just lets the browser collapse the "\n" into a normal space.
 const HERO_CONTENT = [
   {
     id: "opening",
@@ -47,10 +39,6 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-// Distance (px) between adjacent sidebar card slots in the carousel — translateY
-// on desktop, translateX on mobile (see .sidebarCard in Hero.module.css). Must be
-// >= the card's largest dimension (mobile card width is up to 320px) so adjacent
-// cards never overlap mid-transition — neighbors are always exactly this far apart.
 const SIDEBAR_SLOT_HEIGHT = 340;
 
 export default function Hero() {
@@ -63,12 +51,8 @@ export default function Hero() {
   const progressFillRef = useRef(null);
   const [activeId, setActiveId] = useState("opening");
 
-  // Preload the full sequence in the background. The render loop only ever
-  // swaps the visible <img>'s src to a frame that has already finished
-  // loading, so scrubbing never shows a broken/blank image mid-load — it just
-  // holds the last valid frame until the next one is ready.
   useEffect(() => {
-    loadedFramesRef.current[1] = true; // the visible <img> already requests frame 1 directly
+    loadedFramesRef.current[1] = true; 
 
     const preloaders = [];
     for (let i = 1; i <= FRAME_COUNT; i++) {
@@ -85,10 +69,6 @@ export default function Hero() {
     const section = sectionRef.current;
     if (!section) return;
 
-    // Snaps every value directly to raw scroll position — no easing/trailing.
-    // Still rAF-throttled against layout thrash on scroll, but each tick reads
-    // the current frame immediately rather than chasing a smoothed target, so
-    // there's no catch-up delay once scrolling stops.
     const update = () => {
       const rect = section.getBoundingClientRect();
       const scrollableDistance = section.offsetHeight - window.innerHeight;
@@ -115,11 +95,6 @@ export default function Hero() {
         HERO_CONTENT[HERO_CONTENT.length - 1];
       setActiveId((prev) => (prev === block.id ? prev : block.id));
 
-      // Sidebar carousel position: 0 at the first card, HERO_CONTENT.length - 1 at
-      // the last, interpolating in between so it scrolls in lockstep with raw scroll
-      // position. The offset is exposed as a CSS custom property rather than a
-      // transform directly, so the stylesheet can decide per breakpoint whether it
-      // drives translateY (desktop, bottom-to-top) or translateX (mobile, right-to-left).
       const stageValue = progress * (HERO_CONTENT.length - 1);
       sidebarCardRefs.current.forEach((el, i) => {
         if (!el) return;
@@ -151,9 +126,6 @@ export default function Hero() {
   }, []);
 
   const scrollToSpecs = (event) => {
-    // Blur immediately so the button doesn't stay visually "pressed" after the
-    // tap — mobile browsers keep :hover/:focus styles latched on touch until
-    // something else takes focus, which otherwise leaves it looking stuck.
     event.currentTarget.blur();
     document.getElementById("specs")?.scrollIntoView({ behavior: "smooth" });
   };

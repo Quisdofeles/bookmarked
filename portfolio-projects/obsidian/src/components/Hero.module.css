@@ -1,20 +1,25 @@
-/* 300svh = 100svh pinned stage + 200svh of scroll travel used to scrub the image
-   sequence. That's 10x the scroll distance of a plain 120vh hero, so the frames
-   play out slowly across a long scroll instead of finishing in one wheel click. */
-.hero {
+/*-----------
+HERO SECTION
+------------*/
+
+/*Hero*/
+.hero 
+{
   position: relative;
   height: 300svh;
   background: var(--color-bg);
 }
-
-.stickyStage {
+.stickyStage 
+{
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: hidden;
 }
 
-.frame {
+/*Background Animation*/
+.frame 
+{
   position: absolute;
   top: 55%;
   left: 50%;
@@ -23,8 +28,8 @@
   transform: translate(-50%, -50%);
   object-fit: contain;
 }
-
-.scrim {
+.scrim 
+{
   position: absolute;
   inset: 0;
   background: linear-gradient(
@@ -36,9 +41,9 @@
   );
 }
 
-/* Timeline indicator directly under the header, filled by the same eased
-   currentTime that drives the video (see progressFillRef in Hero.jsx). */
-.progressTrack {
+/*Progress Bar*/
+.progressTrack 
+{
   position: absolute;
   top: var(--header-height);
   left: 0;
@@ -47,37 +52,39 @@
   height: 2px;
   background: var(--glass-border);
 }
-
-.progressFill {
+.progressFill 
+{
   height: 100%;
   width: 0%;
   background: var(--color-text);
 }
 
-.overlay {
+/*Text Block*/
+.overlay 
+{
   position: absolute;
   inset: 0;
   z-index: 2;
   padding: calc(var(--header-height) + 42px) 42px;
 }
-
-.titleBlock {
+.titleBlock 
+{
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
   max-width: 760px;
 }
-
-.titleStack {
+.titleStack 
+{
   display: grid;
 }
-
-.titleStack > * {
+.titleStack > * 
+{
   grid-area: 1 / 1;
 }
-
-.title {
+.title 
+{
   margin: 0;
   font-size: 44px;
   line-height: 1.15;
@@ -85,22 +92,18 @@
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
 }
-
-.title.active {
+.title.active 
+{
   opacity: 1;
 }
-
-.titleLine {
+.titleLine 
+{
   display: block;
 }
 
-/* Full-height glass sidebar lane, bordered like the header. Cards live inside
-   it and are positioned imperatively every render frame (see Hero.jsx) via the
-   --offset custom property — no CSS transition, the per-frame updates are the
-   animation. ::before/::after paint the black vignette that hides cards as
-   they approach the top/bottom edges, so the lane reads as a continuous strip
-   instead of a fixed set of 3 items. */
-.sidebar {
+/*Sidebar*/
+.sidebar 
+{
   position: absolute;
   top: 0;
   bottom: 0;
@@ -112,9 +115,9 @@
   border-right: 1px solid var(--glass-border);
   background: rgba(0, 0, 0, 0.2);
 }
-
 .sidebar::before,
-.sidebar::after {
+.sidebar::after 
+{
   content: "";
   position: absolute;
   left: 0;
@@ -123,18 +126,18 @@
   height: 28%;
   pointer-events: none;
 }
-
-.sidebar::before {
+.sidebar::before 
+{
   top: 0;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
 }
-
-.sidebar::after {
+.sidebar::after 
+{
   bottom: 0;
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
 }
-
-.sidebarCard {
+.sidebarCard 
+{
   position: absolute;
   top: 50%;
   left: 50%;
@@ -150,20 +153,22 @@
   transform: translate(-50%, calc(-50% + var(--offset, 0px)));
   opacity: 0;
 }
-
-.sidebarCardTitle {
+.sidebarCardTitle 
+{
   font-size: 16px;
   margin-bottom: 10px;
 }
-
-.sidebarCardText {
+.sidebarCardText 
+{
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
   color: var(--color-silver);
 }
 
-.exploreBtn {
+/*CTA Button*/
+.exploreBtn 
+{
   min-height: 44px;
   padding: 0 36px;
   display: inline-flex;
@@ -179,18 +184,23 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
-
-.exploreBtn:hover {
+.exploreBtn:hover 
+{
   background: var(--color-text);
   color: var(--color-bg);
 }
 
+/*------------
+RESPONSIVNESS
+------------*/
+
 /*Tablet*/
 @media (max-height: 840px) 
 {
-  .frame {
+  .frame 
+  {
     position: absolute;
     top: 60%;
     left: 50%;
