@@ -55,18 +55,18 @@ rule is what renders at any given size.
 
 There's no real media duration anymore, so `TIMELINE_DURATION` is just a virtual timeline scale kept
 so the breakpoints/carousel/progress-bar math below didn't need to change when the video was
-swapped out (check `Hero.jsx` for its current value — it's changed more than once). Scroll and frame
-selection are deliberately decoupled into two loops so playback eases
-toward the scroll position instead of snapping to it: a scroll listener (rAF-throttled) only
-updates `targetProgressRef` — where the sequence *should* end up. A separate, always-running
-`requestAnimationFrame` loop (`renderFrame`) reads that target every frame and nudges
-`smoothedTimeRef` toward it by `SMOOTHING` (8%) of the remaining gap, maps that smoothed time to a
-frame index (`1 + (time / TIMELINE_DURATION) * (FRAME_COUNT - 1)`, rounded and clamped), and — only
-if that frame has already finished preloading — swaps the `<img>`'s `src`. If it hasn't loaded yet,
-the display just holds the last valid frame rather than showing a broken image; it catches up once
-the background preload (a `useEffect` that fires off all `FRAME_COUNT` `new Image()` requests on
-mount) reaches it. Because the render loop keeps running independent of scroll events, playback
-keeps easing forward even after the user stops scrolling, instead of freezing mid-catch-up.
+swapped out (check `Hero.jsx` for its current value — it's changed more than once). There used to be
+a two-loop easing system here (a scroll-driven target plus a separately-running smoothing loop that
+kept nudging the displayed frame toward it), but that's been removed in favor of a single
+rAF-throttled scroll handler (`update()`) that snaps every value — frame, progress bar, title
+breakpoint, sidebar carousel — directly from raw scroll position on each tick. The rAF throttle is
+just standard scroll-perf hygiene (batches to one calculation per animation frame instead of one per
+scroll event); it is not easing, and there's no catch-up delay once scrolling stops. Frame index is
+`clamp(round(1 + progress * (FRAME_COUNT - 1)), 1, FRAME_COUNT)`, and — only if that frame has
+already finished preloading — the `<img>`'s `src` is swapped. If it hasn't loaded yet, the display
+just holds the last valid frame rather than showing a broken image; it catches up once the
+background preload (a separate `useEffect` that fires off all `FRAME_COUNT` `new Image()` requests
+on mount) reaches it.
 
 The sequence was originally 99 PNG frames at ~134MB total, which made the preload-lag above
 genuinely visible (multi-second delay between scroll target and displayed frame on a fresh load,
@@ -75,11 +75,11 @@ confirmed during development). It went through a 64-WebP-frame revision (~7.3MB)
 enough that the preload lag hasn't been an issue since the first WebP swap. If frame count or format
 changes again, re-check this on a throttled/slow connection before assuming it's still fine.
 
-Title, sidebar, and the progress bar are all driven off that same smoothed time — not the raw
-scroll target — so nothing ever gets ahead of what's actually on screen. A thin
+Title, sidebar, and the progress bar are all driven off that same raw scroll-derived `progress` —
+so everything always matches exactly what's on screen, with no lag. A thin
 `.progressTrack`/`.progressFill` bar sits directly under the header (`top: var(--header-height)`,
 inside `.stickyStage` so it scrolls away with the rest of the hero once unpinned) and its width is
-set to `currentTime / TIMELINE_DURATION` every render-loop frame via `progressFillRef`.
+set to `progress * 100%` on every scroll tick via `progressFillRef`.
 
 A large title sits top-left (`.titleBlock`), crossfading between three breakpoints (currently
 `0–3s`, `3–6s`, `6–10s` — check `HERO_CONTENT`/`TIMELINE_DURATION` in `Hero.jsx` for the live values)
@@ -95,12 +95,15 @@ half wraps a second time — worth rechecking both whenever the title copy chang
 A sharp-cornered "Explore" button lives inside `.titleBlock`, directly under the title stack —
 top-left, left-aligned with the title, not centered at the bottom. `.titleBlock` sets
 `align-items: flex-start` specifically so the button (an `inline-flex`) hugs its own content width
-instead of stretching to the column's full width. It smooth-scrolls to `#specs` on click.
+instead of stretching to the column's full width. It smooth-scrolls to `#specs` on click, and
+explicitly blurs itself first (`event.currentTarget.blur()`) — otherwise mobile browsers latch the
+`:hover`/`:focus` styles after a tap and the button looks visually "stuck" pressed until something
+else takes focus.
 
 The right sidebar (`.sidebar`) is a full-height glass-bordered lane — full-width along the bottom
 on mobile — not just three floating cards. `HERO_CONTENT`'s three cards (title + description each)
-are positioned imperatively every render-loop frame (refs in `sidebarCardRefs`, no CSS transition —
-the per-frame updates *are* the animation) via a `--offset` CSS custom property, not a transform set
+are positioned imperatively on every scroll tick (refs in `sidebarCardRefs`, no CSS transition —
+the per-tick updates *are* the animation) via a `--offset` CSS custom property, not a transform set
 directly in JS: `.sidebarCard`'s base transform is `translate(-50%, calc(-50% + var(--offset)))`
 (vertical, bottom-to-top) and the `1024px` media query overrides it to
 `translate(calc(-50% + var(--offset)), -50%)` (horizontal, right-to-left) — same JS math drives
@@ -113,9 +116,6 @@ adjacent cards overlap and their text collides mid-transition — there's comfor
 moment, but re-check this if the lane is ever widened. `.sidebar::before`/`::after` paint the black vignette (gradient,
 `linear-gradient` flipped to left/right on mobile) that fades cards out near the lane's edges, which
 is what makes it read as a continuous strip instead of three items in a box.
-
-If the easing feels too laggy/snappy, adjust `SMOOTHING` in `Hero.jsx` (lower = more trailing,
-higher = closer to a direct scroll-to-frame mapping).
 
 If the frame count changes, update `FRAME_COUNT` in `Hero.jsx` (and add/remove the corresponding
 `Obsidian_Hero_Disassemble_Frame-N.webp` files in `public/images/`); if the naming pattern or

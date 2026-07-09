@@ -53,19 +53,10 @@ function clamp(value, min, max) {
 // cards never overlap mid-transition — neighbors are always exactly this far apart.
 const SIDEBAR_SLOT_HEIGHT = 340;
 
-// How much of the gap to the scroll target the timeline closes per animation frame.
-// Lower = more trailing/fluid (feels like it's playing to catch up), higher =
-// snappier and closer to a direct scroll-to-frame mapping.
-const SMOOTHING = 0.08;
-const SNAP_EPSILON = 0.005; // seconds; once this close, stop nudging the timeline
-
 export default function Hero() {
   const sectionRef = useRef(null);
   const imgRef = useRef(null);
   const scrollRafRef = useRef(null);
-  const renderRafRef = useRef(null);
-  const targetProgressRef = useRef(0);
-  const smoothedTimeRef = useRef(0);
   const lastFrameIndexRef = useRef(1);
   const loadedFramesRef = useRef(new Array(FRAME_COUNT + 1).fill(false));
   const sidebarCardRefs = useRef([]);
@@ -94,42 +85,18 @@ export default function Hero() {
     const section = sectionRef.current;
     if (!section) return;
 
-    // Scroll only updates *where the sequence should end up* — cheap, rAF-throttled
-    // against layout thrash. It never touches the displayed frame directly, so a
-    // fast scroll doesn't teleport straight to the target frame.
-    const updateTarget = () => {
+    // Snaps every value directly to raw scroll position — no easing/trailing.
+    // Still rAF-throttled against layout thrash on scroll, but each tick reads
+    // the current frame immediately rather than chasing a smoothed target, so
+    // there's no catch-up delay once scrolling stops.
+    const update = () => {
       const rect = section.getBoundingClientRect();
       const scrollableDistance = section.offsetHeight - window.innerHeight;
       const scrolled = -rect.top;
-      targetProgressRef.current =
-        scrollableDistance > 0 ? clamp(scrolled / scrollableDistance, 0, 1) : 0;
-    };
+      const progress = scrollableDistance > 0 ? clamp(scrolled / scrollableDistance, 0, 1) : 0;
+      const currentTime = progress * TIMELINE_DURATION;
 
-    const onScroll = () => {
-      if (scrollRafRef.current) return;
-      scrollRafRef.current = requestAnimationFrame(() => {
-        scrollRafRef.current = null;
-        updateTarget();
-      });
-    };
-
-    // Runs every frame regardless of whether the user is actively scrolling, so
-    // playback keeps easing toward the target — and the overlays stay driven by
-    // that same eased time — until it catches up, instead of freezing the
-    // instant scrolling stops.
-    const renderFrame = () => {
-      const targetTime = targetProgressRef.current * TIMELINE_DURATION;
-      const delta = targetTime - smoothedTimeRef.current;
-      smoothedTimeRef.current =
-        Math.abs(delta) < SNAP_EPSILON ? targetTime : smoothedTimeRef.current + delta * SMOOTHING;
-
-      const currentTime = smoothedTimeRef.current;
-
-      const frameIndex = clamp(
-        Math.round(1 + (currentTime / TIMELINE_DURATION) * (FRAME_COUNT - 1)),
-        1,
-        FRAME_COUNT
-      );
+      const frameIndex = clamp(Math.round(1 + progress * (FRAME_COUNT - 1)), 1, FRAME_COUNT);
       if (
         frameIndex !== lastFrameIndexRef.current &&
         loadedFramesRef.current[frameIndex] &&
@@ -140,7 +107,7 @@ export default function Hero() {
       }
 
       if (progressFillRef.current) {
-        progressFillRef.current.style.width = `${(currentTime / TIMELINE_DURATION) * 100}%`;
+        progressFillRef.current.style.width = `${progress * 100}%`;
       }
 
       const block =
@@ -148,13 +115,12 @@ export default function Hero() {
         HERO_CONTENT[HERO_CONTENT.length - 1];
       setActiveId((prev) => (prev === block.id ? prev : block.id));
 
-      // Continuous carousel position: 0 at the first card, HERO_CONTENT.length - 1
-      // at the last, interpolating smoothly in between so the sidebar scrolls in
-      // lockstep with the (now eased) timeline instead of snapping. The offset is
-      // exposed as a CSS custom property rather than a transform directly, so the
-      // stylesheet can decide per breakpoint whether it drives translateY (desktop,
-      // bottom-to-top) or translateX (mobile, right-to-left).
-      const stageValue = (currentTime / TIMELINE_DURATION) * (HERO_CONTENT.length - 1);
+      // Sidebar carousel position: 0 at the first card, HERO_CONTENT.length - 1 at
+      // the last, interpolating in between so it scrolls in lockstep with raw scroll
+      // position. The offset is exposed as a CSS custom property rather than a
+      // transform directly, so the stylesheet can decide per breakpoint whether it
+      // drives translateY (desktop, bottom-to-top) or translateX (mobile, right-to-left).
+      const stageValue = progress * (HERO_CONTENT.length - 1);
       sidebarCardRefs.current.forEach((el, i) => {
         if (!el) return;
         const cardDelta = i - stageValue;
@@ -163,12 +129,17 @@ export default function Hero() {
         el.style.setProperty("--offset", `${offsetPx}px`);
         el.style.opacity = opacity;
       });
-
-      renderRafRef.current = requestAnimationFrame(renderFrame);
     };
 
-    updateTarget();
-    renderRafRef.current = requestAnimationFrame(renderFrame);
+    const onScroll = () => {
+      if (scrollRafRef.current) return;
+      scrollRafRef.current = requestAnimationFrame(() => {
+        scrollRafRef.current = null;
+        update();
+      });
+    };
+
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
 
@@ -176,11 +147,14 @@ export default function Hero() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
-      if (renderRafRef.current) cancelAnimationFrame(renderRafRef.current);
     };
   }, []);
 
-  const scrollToSpecs = () => {
+  const scrollToSpecs = (event) => {
+    // Blur immediately so the button doesn't stay visually "pressed" after the
+    // tap — mobile browsers keep :hover/:focus styles latched on touch until
+    // something else takes focus, which otherwise leaves it looking stuck.
+    event.currentTarget.blur();
     document.getElementById("specs")?.scrollIntoView({ behavior: "smooth" });
   };
 
