@@ -1,6 +1,9 @@
+/* 260vh = 100vh pinned stage + 160vh of scroll travel used to scrub the image
+   sequence. That's 8x the scroll distance of a plain 120vh hero, so the frames
+   play out slowly across a long scroll instead of finishing in one wheel click. */
 .hero {
   position: relative;
-  height: 120vh;
+  height: 280vh;
   background: var(--color-bg);
 }
 
@@ -8,68 +11,238 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 48px;
-  padding: var(--header-height) 64px 0;
   overflow: hidden;
 }
 
-.mediaWrap {
-  width: 65%;
-  max-width: 900px;
-  flex-shrink: 0;
+.frame {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  width: 75%;
+  height: 75%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
 }
 
-.video {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.textStack {
-  position: relative;
-  width: 320px;
-  height: 120px;
-  flex-shrink: 0;
-}
-
-.text {
+.scrim {
   position: absolute;
   inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.65) 0%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.15) 70%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+}
+
+/* Timeline indicator directly under the header, filled by the same eased
+   currentTime that drives the video (see progressFillRef in Hero.jsx). */
+.progressTrack {
+  position: absolute;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 2px;
+  background: var(--glass-border);
+}
+
+.progressFill {
+  height: 100%;
+  width: 0%;
+  background: var(--color-text);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: calc(var(--header-height) + 42px) 42px;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.titleStack {
+  display: grid;
+}
+
+.titleStack > * {
+  grid-area: 1 / 1;
+}
+
+.title {
   margin: 0;
-  font-family: var(--font-heading);
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 44px;
+  line-height: 1.15;
   color: var(--color-text);
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
 }
 
-.textActive {
+.title.active {
   opacity: 1;
 }
 
-@media (max-width: 768px) {
-  .stickyStage {
-    flex-direction: column;
-    justify-content: center;
-    gap: 24px;
-    padding: calc(var(--header-height) + 16px) 20px 16px;
+.titleLine {
+  display: block;
+}
+
+/* Full-height glass sidebar lane, bordered like the header. Cards live inside
+   it and are positioned imperatively every render frame (see Hero.jsx) via the
+   --offset custom property — no CSS transition, the per-frame updates are the
+   animation. ::before/::after paint the black vignette that hides cards as
+   they approach the top/bottom edges, so the lane reads as a continuous strip
+   instead of a fixed set of 3 items. */
+.sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 44px;
+  z-index: 2;
+  width: 260px;
+  overflow: hidden;
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar::before,
+.sidebar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  height: 28%;
+  pointer-events: none;
+}
+
+.sidebar::before {
+  top: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.sidebar::after {
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.sidebarCard {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 20px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  text-align: left;
+  transform: translate(-50%, calc(-50% + var(--offset, 0px)));
+  opacity: 0;
+}
+
+.sidebarCardTitle {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.sidebarCardText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-silver);
+}
+
+.exploreBtn {
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-text);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.exploreBtn:hover {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+@media (max-width: 1000px) {
+  .overlay {
+    padding: calc(var(--header-height) + 32px) 20px;
   }
 
-  .mediaWrap {
-    width: 90%;
+  .titleBlock {
+    max-width: 100%;
   }
 
-  .textStack {
-    width: 100%;
-    height: 80px;
-    text-align: center;
+  .title {
+    font-size: 22px;
   }
 
-  .text {
-    font-size: 15px;
+  /* Full-width horizontal lane instead of full-height vertical one; cards now
+     slide right-to-left (translateX) using the same --offset value. */
+  .sidebar {
+    top: auto;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    height: 180px;
+    width: auto;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .sidebar::before,
+  .sidebar::after {
+    top: 0;
+    bottom: 0;
+    left: auto;
+    right: auto;
+    width: 20%;
+    height: auto;
+  }
+
+  .sidebar::before {
+    left: 0;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .sidebar::after {
+    right: 0;
+    background: linear-gradient(270deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .sidebarCard {
+    width: calc(100% - 64px);
+    max-width: 260px;
+    transform: translate(calc(-50% + var(--offset, 0px)), -50%);
+  }
+
+  .exploreBtn {
+    padding: 0 28px;
   }
 }
