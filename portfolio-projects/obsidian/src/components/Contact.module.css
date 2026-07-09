@@ -1,0 +1,55 @@
+.contact {
+  background: var(--color-bg);
+  min-height: 360px;
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.heading {
+  font-size: 32px;
+}
+
+.subheading {
+  margin-bottom: 24px;
+}
+
+.form {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.input {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px solid var(--color-text);
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.input::placeholder {
+  color: var(--color-silver);
+}
+
+.confirmation {
+  margin-top: 16px;
+  color: var(--color-gold);
+}
+
+@media (max-width: 768px) {
+  .contact {
+    padding: 48px 20px;
+  }
+
+  .form {
+    flex-direction: column;
+  }
+}

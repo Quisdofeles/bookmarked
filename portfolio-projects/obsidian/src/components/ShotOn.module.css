@@ -1,0 +1,52 @@
+.shotOn {
+  background: var(--color-bg);
+  padding: 96px 64px;
+  text-align: center;
+}
+
+.heading {
+  font-size: 48px;
+}
+
+.subheading {
+  margin-top: 16px;
+  font-size: 16px;
+}
+
+.grid {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  text-align: left;
+}
+
+.image {
+  aspect-ratio: 4 / 5;
+}
+
+.shotOn :global(.btn) {
+  margin-top: 56px;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .shotOn {
+    padding: 64px 20px;
+  }
+
+  .heading {
+    font-size: 32px;
+  }
+}
