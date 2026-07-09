@@ -30,9 +30,9 @@ public/
   fonts/    BasementGrotesque-Black_v1.202.otf, IBMPlexSans-Bold.ttf, IBMPlexSans-Regular.ttf
   video/    Obsidian_Hero_Camera_Transition.mp4, Obsidian_Specs_Rotation.mp4 — both unused; the hero
             moved from video to an image sequence (see below), left in place in case they're wanted again
-  images/   Obsidian_Hero_Disassembly_001.webp .. _064.webp (hero scroll sequence, ~7.3MB total)
-            plus empty space for other sections, which still use CSS `.placeholder` boxes (#333333)
-            until real photography lands for them
+  images/   Obsidian_Hero_Disassemble_Frame-1.webp .. Frame-40.webp (hero scroll sequence, ~2.7MB
+            total, no zero-padding in the filenames) plus empty space for other sections, which
+            still use CSS `.placeholder` boxes (#333333) until real photography lands for them
   CNAME     tableofcontents.page — custom domain for GitHub Pages
 ```
 
@@ -42,14 +42,16 @@ photography comes in — don't add image-loading logic speculatively.
 
 ## How the hero scroll-scrub works
 
-`Hero.jsx` wraps a `280vh` section around a `position: sticky; height: 100vh` stage. The extra
-`180vh` is the scroll distance used to scrub the sequence (9x a plain `120vh` hero's `20vh`, matching
-`TIMELINE_DURATION`'s current 9 — the ratio is 20vh of scroll per virtual second either way) — the
-visible `<img>` never scrolls, it stays pinned while the section scrolls underneath it, and its
-`src` is swapped between `/images/Obsidian_Hero_Disassembly_001.webp` .. `_064.webp` as scroll
-progresses. The image is reduced to `75%` (`object-fit: contain`, no cropping) and positioned at
-`top: 60% / left: 50%` — deliberately not dead-center; it's anchored a bit below center. Adjust
-`.frame`'s `top` in `Hero.module.css` if that vertical anchor ever needs to move again.
+`Hero.jsx` wraps a `300svh` section around a `position: sticky; height: 100svh` stage. The extra
+`200svh` is the scroll distance used to scrub the sequence (10x a plain `120vh` hero's `20vh`,
+matching `TIMELINE_DURATION`'s current 10 — the ratio is 20vh of scroll per virtual second either
+way) — the visible `<img>` never scrolls, it stays pinned while the section scrolls underneath it,
+and its `src` is swapped between `/images/Obsidian_Hero_Disassemble_Frame-1.webp` ..
+`Frame-40.webp` as scroll progresses (note the frame numbers aren't zero-padded — `frameSrc()` does
+NOT `padStart`, unlike the previous asset set). The base (non-responsive) `.frame` sizing/position
+has been superseded by a set of manually-tuned breakpoints — check the `@media` rules in
+`Hero.module.css` for the current values per viewport rather than assuming the unqualified `.frame`
+rule is what renders at any given size.
 
 There's no real media duration anymore, so `TIMELINE_DURATION` is just a virtual timeline scale kept
 so the breakpoints/carousel/progress-bar math below didn't need to change when the video was
@@ -68,10 +70,10 @@ keeps easing forward even after the user stops scrolling, instead of freezing mi
 
 The sequence was originally 99 PNG frames at ~134MB total, which made the preload-lag above
 genuinely visible (multi-second delay between scroll target and displayed frame on a fresh load,
-confirmed during development). It's since been replaced with 64 WebP frames at ~7.3MB total
-(`public/images/Obsidian_Hero_Disassembly_NNN.webp`), which preload fast enough on localhost that
-the lag is no longer noticeable — re-verified after the swap. If frame count or format changes
-again, re-check this on a throttled/slow connection before assuming it's still fine.
+confirmed during development). It went through a 64-WebP-frame revision (~7.3MB) and is currently
+40 WebP frames at ~2.7MB total (`public/images/Obsidian_Hero_Disassemble_Frame-N.webp`) — small
+enough that the preload lag hasn't been an issue since the first WebP swap. If frame count or format
+changes again, re-check this on a throttled/slow connection before assuming it's still fine.
 
 Title, sidebar, and the progress bar are all driven off that same smoothed time — not the raw
 scroll target — so nothing ever gets ahead of what's actually on screen. A thin
@@ -80,7 +82,7 @@ inside `.stickyStage` so it scrolls away with the rest of the hero once unpinned
 set to `currentTime / TIMELINE_DURATION` every render-loop frame via `progressFillRef`.
 
 A large title sits top-left (`.titleBlock`), crossfading between three breakpoints (currently
-`0–3s`, `3–6s`, `6–9s` — check `HERO_CONTENT`/`TIMELINE_DURATION` in `Hero.jsx` for the live values)
+`0–3s`, `3–6s`, `6–10s` — check `HERO_CONTENT`/`TIMELINE_DURATION` in `Hero.jsx` for the live values)
 via the `activeId` state and a CSS grid stack (`grid-area: 1 / 1` on every child, so it sizes to the
 tallest variant). Each `title` is a single string with an embedded `"\n"` marking where it breaks
 into its two display lines — not separate `line1`/`line2` fields. The `<h1>` splits on that
@@ -100,7 +102,7 @@ on mobile — not just three floating cards. `HERO_CONTENT`'s three cards (title
 are positioned imperatively every render-loop frame (refs in `sidebarCardRefs`, no CSS transition —
 the per-frame updates *are* the animation) via a `--offset` CSS custom property, not a transform set
 directly in JS: `.sidebarCard`'s base transform is `translate(-50%, calc(-50% + var(--offset)))`
-(vertical, bottom-to-top) and the `1000px` media query overrides it to
+(vertical, bottom-to-top) and the `1024px` media query overrides it to
 `translate(calc(-50% + var(--offset)), -50%)` (horizontal, right-to-left) — same JS math drives
 both, only the stylesheet decides which axis consumes it per breakpoint. The desktop lane is `260px`
 wide and each `.sidebarCard` is `width: 100%` of it (no side gutter — the card fills the lane
@@ -116,9 +118,9 @@ If the easing feels too laggy/snappy, adjust `SMOOTHING` in `Hero.jsx` (lower = 
 higher = closer to a direct scroll-to-frame mapping).
 
 If the frame count changes, update `FRAME_COUNT` in `Hero.jsx` (and add/remove the corresponding
-`Obsidian_Hero_Disassembly_NNN.webp` files in `public/images/`); if the naming pattern or extension
-changes, update `frameSrc()` too. If the scroll feels too fast/slow, adjust `.hero`'s height in
-`Hero.module.css` (100vh pinned + N vh of scroll travel).
+`Obsidian_Hero_Disassemble_Frame-N.webp` files in `public/images/`); if the naming pattern or
+extension changes, update `frameSrc()` too. If the scroll feels too fast/slow, adjust `.hero`'s
+height in `Hero.module.css` (100svh pinned + N svh of scroll travel).
 
 ## Running locally
 

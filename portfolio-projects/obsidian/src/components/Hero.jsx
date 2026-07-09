@@ -5,12 +5,12 @@ import styles from "./Hero.module.css";
 // scroll-to-frame mapping. Not tied to any real media duration anymore — it's
 // just the same 0-8 scale the old video used, kept so downstream logic
 // (breakpoints, sidebar carousel, progress bar) didn't need to change.
-const TIMELINE_DURATION = 9;
+const TIMELINE_DURATION = 10;
 
-const FRAME_COUNT = 64; // Obsidian_Hero_Disassembly_001.webp .. _064.webp in /public/images
+const FRAME_COUNT = 40; // Obsidian_Hero_Disassemble_Frame-1.webp .. Frame-40.webp in /public/images
 
 function frameSrc(index) {
-  return `/images/Obsidian_Hero_Disassembly_${String(index).padStart(3, "0")}.webp`;
+  return `/images/Obsidian_Hero_Disassemble_Frame-${index}.webp`;
 }
 
 // Titles carry an embedded "\n" marking where the hero <h1> breaks into its two
@@ -21,22 +21,22 @@ const HERO_CONTENT = [
   {
     id: "opening",
     from: 0,
-    to: 3,
+    to: 3.3,
     title: "Precision Engineering\nIn Every Detail",
     description:
       "Every component reengineered from scratch, built around a sensor unlike anything else in its class.",
   },
   {
     id: "mid",
-    from: 3,
-    to: 6,
+    from: 3.4,
+    to: 6.6,
     title: "No Compromise\nNo Shortcuts",
     description:
       "From the milled aluminum chassis to the weather-sealed controls, nothing is left to chance.",
   },
   {
     id: "closing",
-    from: 6,
+    from: 6.7,
     to: TIMELINE_DURATION,
     title: "This Is Obsession\nThis Is OBSIDIAN",
     description: "The camera built for professionals who refuse to compromise, will you?",

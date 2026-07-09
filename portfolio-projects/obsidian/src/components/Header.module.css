@@ -95,7 +95,9 @@
   display: none;
 }
 
-@media (max-width: 768px) {
+/*Mobile*/
+@media (max-width: 768px) 
+{
   .header {
     padding: 0 16px;
   }
@@ -111,10 +113,8 @@
 
   .navLink {
     font-size: 11px;
-  }
-}
+  } 
 
-@media (max-width: 600px) {
   .nav {
     display: none;
   }
