@@ -65,8 +65,22 @@ scroll event); it is not easing, and there's no catch-up delay once scrolling st
 `clamp(round(1 + progress * (FRAME_COUNT - 1)), 1, FRAME_COUNT)`, and — only if that frame has
 already finished preloading — the `<img>`'s `src` is swapped. If it hasn't loaded yet, the display
 just holds the last valid frame rather than showing a broken image; it catches up once the
-background preload (a separate `useEffect` that fires off all `FRAME_COUNT` `new Image()` requests
-on mount) reaches it.
+background preload (a separate `useEffect`) reaches it.
+
+That preload effect is staged, not a single flat loop: frame 1 is already on screen, frames
+2–`PRIORITY_FRAME_COUNT` (10) load immediately as "priority" frames, and only once all of those have
+settled (loaded or errored — `onerror` still counts toward the pending count so one failed request
+can't stall the rest forever) does it kick off frames `PRIORITY_FRAME_COUNT + 1`..`FRAME_COUNT` in
+the background. This was added after a real bug on Vercel: the original version created each
+`new Image()` in a loop and only kept it in a local array scoped to the effect, so once the effect
+returned there was no surviving reference to most of them — the browser was free to garbage-collect
+an in-flight `Image` and silently cancel its download before `onload` fired. That showed up in the
+Network tab as most frames sitting "(canceled)" at 0 kB, with only a handful (whichever happened to
+finish fast enough to dodge GC) completing. It was rare locally because dev-server requests resolve
+fast enough to outrun GC, but a slower CDN round-trip on Vercel gave it a much wider window to
+collect mid-download. The fix is `preloadedImagesRef` — every preloaded `Image` is written into that
+ref (keyed by frame index) so it stays referenced, and therefore alive, for the lifetime of the
+component.
 
 The sequence was originally 99 PNG frames at ~134MB total, which made the preload-lag above
 genuinely visible (multi-second delay between scroll target and displayed frame on a fresh load,

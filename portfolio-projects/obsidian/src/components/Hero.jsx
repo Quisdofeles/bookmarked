@@ -40,6 +40,7 @@ function clamp(value, min, max) {
 }
 
 const SIDEBAR_SLOT_HEIGHT = 340;
+const PRIORITY_FRAME_COUNT = 10;
 
 export default function Hero() {
   const sectionRef = useRef(null);
@@ -47,22 +48,50 @@ export default function Hero() {
   const scrollRafRef = useRef(null);
   const lastFrameIndexRef = useRef(1);
   const loadedFramesRef = useRef(new Array(FRAME_COUNT + 1).fill(false));
+  const preloadedImagesRef = useRef(new Array(FRAME_COUNT + 1));
   const sidebarCardRefs = useRef([]);
   const progressFillRef = useRef(null);
   const [activeId, setActiveId] = useState("opening");
 
   useEffect(() => {
-    loadedFramesRef.current[1] = true; 
+    loadedFramesRef.current[1] = true;
+    const preloadedImages = preloadedImagesRef.current;
 
-    const preloaders = [];
-    for (let i = 1; i <= FRAME_COUNT; i++) {
+    // Keeping every Image in preloadedImages (not just a local var) matters: with no
+    // surviving reference, the browser can GC an in-flight Image and silently cancel
+    // its download before onload fires — the cause of the canceled-request pileup on Vercel.
+    const preloadFrame = (index, onSettled) => {
       const img = new Image();
       img.onload = () => {
-        loadedFramesRef.current[i] = true;
+        loadedFramesRef.current[index] = true;
+        onSettled?.();
       };
-      img.src = frameSrc(i);
-      preloaders.push(img);
+      img.onerror = () => onSettled?.();
+      img.src = frameSrc(index);
+      preloadedImages[index] = img;
+    };
+
+    const priorityFrames = [];
+    for (let i = 2; i <= Math.min(PRIORITY_FRAME_COUNT, FRAME_COUNT); i++) {
+      priorityFrames.push(i);
     }
+
+    const preloadRemainingFrames = () => {
+      for (let i = PRIORITY_FRAME_COUNT + 1; i <= FRAME_COUNT; i++) preloadFrame(i);
+    };
+
+    if (priorityFrames.length === 0) {
+      preloadRemainingFrames();
+      return;
+    }
+
+    let pending = priorityFrames.length;
+    priorityFrames.forEach((i) =>
+      preloadFrame(i, () => {
+        pending -= 1;
+        if (pending === 0) preloadRemainingFrames();
+      })
+    );
   }, []);
 
   useEffect(() => {
