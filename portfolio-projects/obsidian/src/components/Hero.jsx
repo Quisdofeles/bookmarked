@@ -13,22 +13,22 @@ const HERO_CONTENT = [
   {
     id: "opening",
     from: 0,
-    to: 3.3,
+    to: 3,
     title: "Precision Engineering\nIn Every Detail",
     description:
       "Every component reengineered from scratch, built around a sensor unlike anything else in its class.",
   },
   {
     id: "mid",
-    from: 3.4,
-    to: 6.6,
+    from: 3.1,
+    to: 6,
     title: "No Compromise\nNo Shortcuts",
     description:
       "From the milled aluminum chassis to the weather-sealed controls, nothing is left to chance.",
   },
   {
     id: "closing",
-    from: 6.7,
+    from: 6.1,
     to: TIMELINE_DURATION,
     title: "This Is Obsession\nThis Is OBSIDIAN",
     description: "The camera built for professionals who refuse to compromise, will you?",
@@ -57,9 +57,6 @@ export default function Hero() {
     loadedFramesRef.current[1] = true;
     const preloadedImages = preloadedImagesRef.current;
 
-    // Keeping every Image in preloadedImages (not just a local var) matters: with no
-    // surviving reference, the browser can GC an in-flight Image and silently cancel
-    // its download before onload fires — the cause of the canceled-request pileup on Vercel.
     const preloadFrame = (index, onSettled) => {
       const img = new Image();
       img.onload = () => {
@@ -94,65 +91,70 @@ export default function Hero() {
     );
   }, []);
 
+  /*------
+  SIDEBAR
+  -------*/
   useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
+  const section = sectionRef.current;
+  if (!section) return;
 
-    const update = () => {
-      const rect = section.getBoundingClientRect();
-      const scrollableDistance = section.offsetHeight - window.innerHeight;
-      const scrolled = -rect.top;
-      const progress = scrollableDistance > 0 ? clamp(scrolled / scrollableDistance, 0, 1) : 0;
-      const currentTime = progress * TIMELINE_DURATION;
+  const update = () => {
+    const rect = section.getBoundingClientRect();
+    const scrollableDistance = section.offsetHeight - window.innerHeight;
+    const scrolled = -rect.top;
+    const progress = scrollableDistance > 0 ? clamp(scrolled / scrollableDistance, 0, 1) : 0;
+    const currentTime = progress * TIMELINE_DURATION;
 
-      const frameIndex = clamp(Math.round(1 + progress * (FRAME_COUNT - 1)), 1, FRAME_COUNT);
-      if (
-        frameIndex !== lastFrameIndexRef.current &&
-        loadedFramesRef.current[frameIndex] &&
-        imgRef.current
-      ) {
-        imgRef.current.src = frameSrc(frameIndex);
-        lastFrameIndexRef.current = frameIndex;
-      }
+    const frameIndex = clamp(Math.round(1 + progress * (FRAME_COUNT - 1)), 1, FRAME_COUNT);
+    if (
+      frameIndex !== lastFrameIndexRef.current &&
+      loadedFramesRef.current[frameIndex] &&
+      imgRef.current
+    ) {
+      imgRef.current.src = frameSrc(frameIndex);
+      lastFrameIndexRef.current = frameIndex;
+    }
 
-      if (progressFillRef.current) {
-        progressFillRef.current.style.width = `${progress * 100}%`;
-      }
+    if (progressFillRef.current) {
+      progressFillRef.current.style.width = `${progress * 100}%`;
+    }
 
-      const block =
-        HERO_CONTENT.find((b) => currentTime >= b.from && currentTime < b.to) ??
-        HERO_CONTENT[HERO_CONTENT.length - 1];
-      setActiveId((prev) => (prev === block.id ? prev : block.id));
+    const block =
+      HERO_CONTENT.find((b) => currentTime >= b.from && currentTime < b.to) ??
+      HERO_CONTENT[HERO_CONTENT.length - 1];
+    setActiveId((prev) => (prev === block.id ? prev : block.id));
 
-      const stageValue = progress * (HERO_CONTENT.length - 1);
-      sidebarCardRefs.current.forEach((el, i) => {
-        if (!el) return;
-        const cardDelta = i - stageValue;
-        const offsetPx = cardDelta * SIDEBAR_SLOT_HEIGHT;
-        const opacity = clamp(1 - Math.abs(cardDelta), 0, 1);
-        el.style.setProperty("--offset", `${offsetPx}px`);
-        el.style.opacity = opacity;
-      });
-    };
+    const sidebarProgress = clamp(currentTime / 9, 0, 1);
+    const stageValue = sidebarProgress * (HERO_CONTENT.length - 1);
+    
+    sidebarCardRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const cardDelta = i - stageValue;
+      const offsetPx = cardDelta * SIDEBAR_SLOT_HEIGHT;
+      const opacity = clamp(1 - Math.abs(cardDelta), 0, 1);
+      el.style.setProperty("--offset", `${offsetPx}px`);
+      el.style.opacity = opacity;
+    });
+  };
 
-    const onScroll = () => {
-      if (scrollRafRef.current) return;
-      scrollRafRef.current = requestAnimationFrame(() => {
-        scrollRafRef.current = null;
-        update();
-      });
-    };
+  const onScroll = () => {
+    if (scrollRafRef.current) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      update();
+    });
+  };
 
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+  update();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
 
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
-    };
-  }, []);
+  return () => {
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("resize", onScroll);
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+  };
+}, []);
 
   const scrollToSpecs = (event) => {
     event.currentTarget.blur();

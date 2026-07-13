@@ -2,21 +2,30 @@
 HEADER
 ------*/
 
-/*Header*/
-.header {
+.headerContainer 
+{
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   height: var(--header-height);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: height 0.3s ease-in-out;
+}
+.containerExpanded 
+{
+  height: calc(var(--header-height) + 162px);
+}
+.header 
+{
+  height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--glass-border);
 }
 
@@ -140,14 +149,7 @@ RESPONSIVNESS
   {
     display: flex;
     flex-direction: column;
-    position: fixed;
-    top: var(--header-height);
-    left: 0;
-    right: 0;
-    z-index: 999;
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: transparent;
     border-bottom: 1px solid var(--glass-border);
     transform: translateY(-120%);
     transition: transform 0.3s ease-in-out;

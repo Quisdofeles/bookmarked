@@ -29,7 +29,7 @@ export default function Header() {
   const toggleMenu = () => (isMounted ? closeMenu() : openMenu());
 
   return (
-    <>
+    <div className={`${styles.headerContainer} ${isOpen ? styles.containerExpanded : ""}`}>
       <header className={styles.header}>
         <a href="#home" className={styles.logo}>
           OBSIDIAN
@@ -65,6 +65,6 @@ export default function Header() {
           ))}
         </nav>
       )}
-    </>
+    </div>
   );
 }
